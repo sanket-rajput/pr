@@ -1,0 +1,1361 @@
+1)Implement DDA line drawing algorithm to draw: i) Simple Line ii) Dotted Line iii)
+Dashed Line iv) Solid line ;using mouse interface Divide the screen in four
+quadrants with center as (0, 0). The line should work for all the slopes positive as
+well as negative.
+Code: c++
+#include <GL/glut.h>
+#include <cmath>
+#include <vector>
+
+using namespace std;
+
+int lineType = 1; // 1: Simple, 2: Dotted, 3: Dashed, 4: Solid
+vector<pair<int, int>> points;
+
+// Set screen width and height
+const int width = 800;
+const int height = 800;
+
+// Convert mouse click to OpenGL coordinates
+int convertX(int x) {
+    return x - width / 2;
+}
+
+int convertY(int y) {
+    return height / 2 - y;
+}
+
+// Function to plot a pixel
+void drawPixel(int x, int y) {
+    glBegin(GL_POINTS);
+    glVertex2i(x, y);
+    glEnd();
+}
+
+// DDA Line Drawing Algorithm with style
+void drawDDA(int x1, int y1, int x2, int y2, int style) {
+    float dx = x2 - x1;
+    float dy = y2 - y1;
+    int steps = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
+
+    float xInc = dx / steps;
+    float yInc = dy / steps;
+
+    float x = x1;
+    float y = y1;
+
+    for (int i = 0; i <= steps; i++) {
+        bool draw = false;
+
+        switch (style) {
+            case 1: draw = true; break;                  // Simple Line
+            case 2: draw = (i % 5 == 0); break;          // Dotted Line
+            case 3: draw = ((i / 5) % 2 == 0); break;    // Dashed Line
+            case 4: draw = true; break;                  // Solid Line
+        }
+
+        if (draw)
+            drawPixel(round(x), round(y));
+
+        x += xInc;
+        y += yInc;
+    }
+}
+
+// Draw X and Y axis
+void drawAxes() {
+    glColor3f(1, 1, 1);
+    drawDDA(-width / 2, 0, width / 2, 0, 4);  // X-Axis
+    drawDDA(0, -height / 2, 0, height / 2, 4); // Y-Axis
+}
+
+// Display callback
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    drawAxes();
+
+    glColor3f(0, 1, 0);
+    if (points.size() == 2) {
+        drawDDA(points[0].first, points[0].second, points[1].first, points[1].second, lineType);
+    }
+
+    glFlush();
+}
+
+// Mouse callback
+void mouse(int button, int state, int x, int y) {
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+        if (points.size() < 2) {
+            points.emplace_back(convertX(x), convertY(y));
+        } else {
+            points.clear();
+            points.emplace_back(convertX(x), convertY(y));
+        }
+        glutPostRedisplay();
+    }
+}
+
+// Keyboard callback to switch line type
+void keyboard(unsigned char key, int x, int y) {
+    switch (key) {
+        case '1': lineType = 1; break; // Simple
+        case '2': lineType = 2; break; // Dotted
+        case '3': lineType = 3; break; // Dashed
+        case '4': lineType = 4; break; // Solid
+    }
+    glutPostRedisplay();
+}
+
+// Initialize OpenGL
+void init() {
+    glClearColor(0, 0, 0, 0); // Black background
+    glColor3f(0, 1, 0);       // Line color
+    gluOrtho2D(-width / 2, width / 2, -height / 2, height / 2);
+}
+
+// Main
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(width, height);
+    glutCreateWindow("DDA Line Drawing with Styles - Mouse Interface");
+
+    init();
+    glutDisplayFunc(display);
+    glutMouseFunc(mouse);
+    glutKeyboardFunc(keyboard);
+
+    glutMainLoop();
+    return 0;
+}
+
+---------------------------------------------------------------------------------------------------------------------------------
+
+2)Implement Bresenham line drawing algorithm to draw: i) Simple Line ii) Dotted
+Line iii) Dashed Line iv) Solid line ;using mouse interface Divide the screen in four
+quadrants with center as (0, 0). The line should work for all the slopes positive as
+well as negative.
+Code:
+#include <GL/glut.h>
+#include <cmath>
+#include <vector>
+using namespace std;
+
+int width = 800, height = 800;
+int lineType = 1; // 1: Simple, 2: Dotted, 3: Dashed, 4: Solid
+vector<pair<int, int>> points;
+
+int convertX(int x) {
+    return x - width / 2;
+}
+
+int convertY(int y) {
+    return height / 2 - y;
+}
+
+void drawPixel(int x, int y) {
+    glBegin(GL_POINTS);
+    glVertex2i(x, y);
+    glEnd();
+}
+
+// Bresenham's Line Drawing Algorithm with styling
+void drawBresenham(int x1, int y1, int x2, int y2, int style) {
+    int dx = abs(x2 - x1), dy = abs(y2 - y1);
+    int sx = (x2 >= x1) ? 1 : -1;
+    int sy = (y2 >= y1) ? 1 : -1;
+    bool isSteep = dy > dx;
+
+    if (isSteep) {
+        swap(dx, dy);
+    }
+
+    int p = 2 * dy - dx;
+    int x = x1, y = y1;
+
+    for (int i = 0; i <= dx; ++i) {
+        bool draw = false;
+        switch (style) {
+            case 1: draw = true; break;
+            case 2: draw = (i % 5 == 0); break;
+            case 3: draw = ((i / 5) % 2 == 0); break;
+            case 4: draw = true; break;
+        }
+
+        if (draw) drawPixel(x, y);
+
+        if (p >= 0) {
+            if (isSteep)
+                x += sx;
+            else
+                y += sy;
+            p -= 2 * dx;
+        }
+
+        if (isSteep)
+            y += sy;
+        else
+            x += sx;
+
+        p += 2 * dy;
+    }
+}
+
+void drawAxes() {
+    glColor3f(1, 1, 1);
+    drawBresenham(-width / 2, 0, width / 2, 0, 4);  // X-axis
+    drawBresenham(0, -height / 2, 0, height / 2, 4); // Y-axis
+}
+
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    drawAxes();
+
+    glColor3f(0, 1, 0);
+    if (points.size() == 2) {
+        drawBresenham(points[0].first, points[0].second, points[1].first, points[1].second, lineType);
+    }
+
+    glFlush();
+}
+
+void mouse(int button, int state, int x, int y) {
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+        if (points.size() < 2) {
+            points.emplace_back(convertX(x), convertY(y));
+        } else {
+            points.clear();
+            points.emplace_back(convertX(x), convertY(y));
+        }
+        glutPostRedisplay();
+    }
+}
+
+void keyboard(unsigned char key, int x, int y) {
+    switch (key) {
+        case '1': lineType = 1; break;
+        case '2': lineType = 2; break;
+        case '3': lineType = 3; break;
+        case '4': lineType = 4; break;
+    }
+    glutPostRedisplay();
+}
+
+void init() {
+    glClearColor(0, 0, 0, 0);
+    glColor3f(0, 1, 0);
+    gluOrtho2D(-width / 2, width / 2, -height / 2, height / 2);
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(width, height);
+    glutCreateWindow("Bresenham Line Drawing with Styles - Mouse Interface");
+
+    init();
+    glutDisplayFunc(display);
+    glutMouseFunc(mouse);
+    glutKeyboardFunc(keyboard);
+
+    glutMainLoop();
+    return 0;
+}
+
+---------------------------------------------------------------------------------------------------------------------------------
+
+3)Implement Bresenham circle drawing algorithm to draw any object. The object
+should be displayed in all the quadrants with respect to center and radius.
+Code:
+#include <GL/glut.h>
+
+// Window size
+int width = 800, height = 800;
+int radius = 100;
+
+// Draw a single pixel
+void drawPixel(int x, int y) {
+    glBegin(GL_POINTS);
+    glVertex2i(x, y);
+    glEnd();
+}
+
+// Draw 8 symmetric points for the circle
+void drawCirclePoints(int xc, int yc, int x, int y) {
+    drawPixel(xc + x, yc + y);
+    drawPixel(xc - x, yc + y);
+    drawPixel(xc + x, yc - y);
+    drawPixel(xc - x, yc - y);
+    drawPixel(xc + y, yc + x);
+    drawPixel(xc - y, yc + x);
+    drawPixel(xc + y, yc - x);
+    drawPixel(xc - y, yc - x);
+}
+
+// Bresenham Circle Drawing
+void drawCircle(int xc, int yc, int r) {
+    int x = 0, y = r;
+    int d = 3 - 2 * r;
+
+    while (x <= y) {
+        drawCirclePoints(xc, yc, x, y);
+        if (d < 0)
+            d += 4 * x + 6;
+        else {
+            d += 4 * (x - y) + 10;
+            y--;
+        }
+        x++;
+    }
+}
+
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    glColor3f(1, 0, 0); // Red color
+    drawCircle(0, 0, radius); // Draw the circle at origin
+    glFlush();
+}
+
+void init() {
+    glClearColor(0, 0, 0, 0); // Black background
+    gluOrtho2D(-width / 2, width / 2, -height / 2, height / 2); // Set origin at center
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(width, height);
+    glutCreateWindow("Bresenham Circle - Clean Window");
+    init();
+    glutDisplayFunc(display);
+    glutMainLoop();
+    return 0;
+}
+
+---------------------------------------------------------------------------------------------------------------------------------
+
+4)Implement the following polygon filling methods : i) Flood fill / Seed fill using
+mouse click, keyboard interface and menu driven programming.
+Code:
+// FloodFill.cpp
+#include <iostream>
+#include <stack>
+#include <GL/glut.h>
+
+using namespace std;
+
+float R = 0, G = 0, B = 0;
+
+void init() {
+    glClearColor(1, 1, 1, 1); // White background
+    gluOrtho2D(0, 640, 0, 480);
+}
+
+// Iterative Flood Fill
+void floodFill(int x, int y, float* newCol, float* oldCol) {
+    stack<pair<int, int>> pixels;
+    pixels.push({x, y});
+
+    while (!pixels.empty()) {
+        auto [px, py] = pixels.top();
+        pixels.pop();
+
+        float pixel[3];
+        glReadPixels(px, py, 1, 1, GL_RGB, GL_FLOAT, pixel);
+
+        if (pixel[0] == oldCol[0] && pixel[1] == oldCol[1] && pixel[2] == oldCol[2]) {
+            glBegin(GL_POINTS);
+            glColor3f(newCol[0], newCol[1], newCol[2]);
+            glVertex2i(px, py);
+            glEnd();
+            glFlush();
+
+            pixels.push({px + 1, py});
+            pixels.push({px - 1, py});
+            pixels.push({px, py + 1});
+            pixels.push({px, py - 1});
+        }
+    }
+}
+
+void mouse(int btn, int state, int x, int y) {
+    y = 480 - y;
+    if (btn == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+        float oldcol[] = {1, 1, 1};
+        float newcol[] = {R, G, B};
+        floodFill(x, y, newcol, oldcol);
+    }
+}
+
+void drawPolygon() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    glColor3f(1, 0, 0);
+    glBegin(GL_LINE_LOOP);
+    glVertex2i(150, 100);
+    glVertex2i(300, 300);
+    glVertex2i(450, 100);
+    glEnd();
+    glFlush();
+}
+
+void colorMenu(int value) {
+    switch (value) {
+        case 1: R = 0, G = 1, B = 0; break;
+        case 2: R = 1, G = 1, B = 0; break;
+        case 3: R = 1, G = 0, B = 1; break;
+    }
+    glutPostRedisplay();
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitWindowSize(640, 480);
+    glutInitWindowPosition(100, 100);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutCreateWindow("Flood Fill");
+
+    init();
+    glutDisplayFunc(drawPolygon);
+    glutMouseFunc(mouse);
+
+    glutCreateMenu(colorMenu);
+    glutAddMenuEntry("Green", 1);
+    glutAddMenuEntry("Yellow", 2);
+    glutAddMenuEntry("Pink", 3);
+    glutAttachMenu(GLUT_RIGHT_BUTTON);
+
+    glutMainLoop();
+    return 0;
+}
+
+---------------------------------------------------------------------------------------------------------------------------------
+
+5)Implement the following polygon filling methods : i) Boundary fill ; using mouse
+click, keyboard interface and menu driven programming.
+Code:
+// BoundaryFill.cpp
+#include <iostream>
+#include <stack>
+#include <GL/glut.h>
+
+using namespace std;
+
+float R = 0, G = 0, B = 0;
+
+void init() {
+    glClearColor(1, 1, 1, 1);
+    gluOrtho2D(0, 640, 0, 480);
+}
+
+// Iterative Boundary Fill
+void boundaryFill(int x, int y, float* fillColor, float* bc) {
+    stack<pair<int, int>> pixels;
+    pixels.push({x, y});
+
+    while (!pixels.empty()) {
+        auto [px, py] = pixels.top();
+        pixels.pop();
+
+        float color[3];
+        glReadPixels(px, py, 1, 1, GL_RGB, GL_FLOAT, color);
+
+        if ((color[0] != bc[0] || color[1] != bc[1] || color[2] != bc[2]) &&
+            (color[0] != fillColor[0] || color[1] != fillColor[1] || color[2] != fillColor[2])) {
+
+            glBegin(GL_POINTS);
+            glColor3f(fillColor[0], fillColor[1], fillColor[2]);
+            glVertex2i(px, py);
+            glEnd();
+            glFlush();
+
+            pixels.push({px + 1, py});
+            pixels.push({px - 1, py});
+            pixels.push({px, py + 1});
+            pixels.push({px, py - 1});
+        }
+    }
+}
+
+void mouse(int btn, int state, int x, int y) {
+    y = 480 - y;
+    if (btn == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+        float bc[] = {1, 0, 0};      // Red boundary
+        float newCol[] = {R, G, B};  // Fill color
+        boundaryFill(x, y, newCol, bc);
+    }
+}
+
+void drawPolygon() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    glColor3f(1, 0, 0);
+    glBegin(GL_LINE_LOOP);
+    glVertex2i(150, 100);
+    glVertex2i(300, 300);
+    glVertex2i(450, 100);
+    glEnd();
+    glFlush();
+}
+
+void colorMenu(int value) {
+    switch (value) {
+        case 1: R = 0, G = 1, B = 0; break;
+        case 2: R = 1, G = 1, B = 0; break;
+        case 3: R = 1, G = 0, B = 1; break;
+    }
+    glutPostRedisplay();
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitWindowSize(640, 480);
+    glutInitWindowPosition(100, 100);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutCreateWindow("Boundary Fill");
+
+    init();
+    glutDisplayFunc(drawPolygon);
+    glutMouseFunc(mouse);
+
+    glutCreateMenu(colorMenu);
+    glutAddMenuEntry("Green", 1);
+    glutAddMenuEntry("Yellow", 2);
+    glutAddMenuEntry("Pink", 3);
+    glutAttachMenu(GLUT_RIGHT_BUTTON);
+
+    glutMainLoop();
+    return 0;
+}
+
+---------------------------------------------------------------------------------------------------------------------------------
+
+6)Implement Cohen Sutherland polygon clipping method to clip the polygon with
+respect the viewport and window. Use mouse click, keyboard interface.
+Code:
+#include <iostream>
+#include <math.h>
+#include <time.h>
+#include <GL/glut.h>
+
+using namespace std;
+
+int wxmin = 200, wxmax = 500, wymax = 350, wymin = 100;
+int points[10][2];
+int edge;
+
+void init() {
+    glClearColor(1.0, 1.0, 1.0, 0.0);
+    glMatrixMode(GL_PROJECTION);
+    gluOrtho2D(0, 640, 0, 480);
+    glClear(GL_COLOR_BUFFER_BIT);
+}
+
+void Draw() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    glColor3f(0.2, 0.2, 1);
+    glBegin(GL_POLYGON);
+    for (int i = 0; i < edge; i++) {
+        glVertex2i(points[i][0], points[i][1]);
+    }
+    glEnd();
+    glFlush();
+
+    glColor3f(0, 1, 0);
+    glBegin(GL_LINE_LOOP);
+    glVertex2i(200, 100);
+    glVertex2i(500, 100);
+    glVertex2i(500, 350);
+    glVertex2i(200, 350);
+    glEnd();
+    glFlush();
+}
+
+int BottomClipping(int e) {
+    float x = 0;
+    int k = 0;
+    int t[10][2];
+    for (int i = 0; i < e; i++) {
+        if (points[i][1] < wymin) {
+            if (points[i + 1][1] >= wymin) {
+                float x1 = points[i][0], y1 = points[i][1];
+                float x2 = points[i + 1][0], y2 = points[i + 1][1];
+                x = ((1 / ((y2 - y1) / (x2 - x1))) * (wymin - y1)) + x1;
+                t[k][0] = x;
+                t[k][1] = wymin;
+                k++;
+            }
+        } else if (points[i][1] >= wymin) {
+            if (points[i + 1][1] >= wymin) {
+                t[k][0] = points[i][0];
+                t[k][1] = points[i][1];
+                k++;
+            } else if (points[i + 1][1] < wymin) {
+                float x1 = points[i][0], y1 = points[i][1];
+                float x2 = points[i + 1][0], y2 = points[i + 1][1];
+                x = ((1 / ((y2 - y1) / (x2 - x1))) * (wymin - y1)) + x1;
+                t[k][0] = x1;
+                t[k][1] = y1;
+                k++;
+                t[k][0] = x;
+                t[k][1] = wymin;
+                k++;
+            }
+        }
+    }
+    for (int i = 0; i < 10; i++) {
+        points[i][0] = 0;
+        points[i][1] = 0;
+    }
+    for (int i = 0; i < k; i++) {
+        points[i][0] = t[i][0];
+        points[i][1] = t[i][1];
+    }
+    points[k][0] = points[0][0];
+    points[k][1] = points[0][1];
+    return k;
+}
+
+int TopClipping(int e) {
+    float x = 0;
+    int k = 0;
+    int t[10][2];
+    for (int i = 0; i < e; i++) {
+        if (points[i][1] > wymax) {
+            if (points[i + 1][1] <= wymax) {
+                float x1 = points[i][0], y1 = points[i][1];
+                float x2 = points[i + 1][0], y2 = points[i + 1][1];
+                x = ((1 / ((y2 - y1) / (x2 - x1))) * (wymax - y1)) + x1;
+                t[k][0] = x;
+                t[k][1] = wymax;
+                k++;
+            }
+        } else if (points[i][1] <= wymax) {
+            if (points[i + 1][1] <= wymax) {
+                t[k][0] = points[i][0];
+                t[k][1] = points[i][1];
+                k++;
+            } else if (points[i + 1][1] > wymax) {
+                float x1 = points[i][0], y1 = points[i][1];
+                float x2 = points[i + 1][0], y2 = points[i + 1][1];
+                x = ((1 / ((y2 - y1) / (x2 - x1))) * (wymax - y1)) + x1;
+                t[k][0] = x1;
+                t[k][1] = y1;
+                k++;
+                t[k][0] = x;
+                t[k][1] = wymax;
+                k++;
+            }
+        }
+    }
+    for (int i = 0; i < 10; i++) {
+        points[i][0] = 0;
+        points[i][1] = 0;
+    }
+    for (int i = 0; i < k; i++) {
+        points[i][0] = t[i][0];
+        points[i][1] = t[i][1];
+    }
+    points[k][0] = points[0][0];
+    points[k][1] = points[0][1];
+    return k;
+}
+
+int LeftClipping(int e) {
+    int y = 0, k = 0;
+    int t[10][2];
+    for (int i = 0; i < e; i++) {
+        if (points[i][0] < wxmin) {
+            if (points[i + 1][0] >= wxmin) {
+                float x1 = points[i][0], y1 = points[i][1];
+                float x2 = points[i + 1][0], y2 = points[i + 1][1];
+                y = (((y2 - y1) / (x2 - x1)) * (wxmin - x1)) + y1;
+                t[k][0] = wxmin;
+                t[k][1] = y;
+                k++;
+            }
+        } else if (points[i][0] >= wxmin) {
+            if (points[i + 1][0] >= wxmin) {
+                t[k][0] = points[i][0];
+                t[k][1] = points[i][1];
+                k++;
+            } else if (points[i + 1][0] < wxmin) {
+                float x1 = points[i][0], y1 = points[i][1];
+                float x2 = points[i + 1][0], y2 = points[i + 1][1];
+                y = ((y2 - y1) / (x2 - x1)) * (wxmin - x1) + y1;
+                t[k][0] = x1;
+                t[k][1] = y1;
+                k++;
+                t[k][0] = wxmin;
+                t[k][1] = y;
+                k++;
+            }
+        }
+    }
+    for (int i = 0; i < 10; i++) {
+        points[i][0] = 0;
+        points[i][1] = 0;
+    }
+    for (int i = 0; i < k; i++) {
+        points[i][0] = t[i][0];
+        points[i][1] = t[i][1];
+    }
+    points[k][0] = points[0][0];
+    points[k][1] = points[0][1];
+    return k;
+}
+
+int RightClipping(int e) {
+    int y = 0, k = 0;
+    int t[10][2];
+    for (int i = 0; i < e; i++) {
+        if (points[i][0] > wxmax) {
+            if (points[i + 1][0] <= wxmax) {
+                float x1 = points[i][0], y1 = points[i][1];
+                float x2 = points[i + 1][0], y2 = points[i + 1][1];
+                y = (((y2 - y1) / (x2 - x1)) * (wxmax - x1)) + y1;
+                t[k][0] = wxmax;
+                t[k][1] = y;
+                k++;
+            }
+        } else if (points[i][0] <= wxmax) {
+            if (points[i + 1][0] <= wxmax) {
+                t[k][0] = points[i][0];
+                t[k][1] = points[i][1];
+                k++;
+            } else if (points[i + 1][0] > wxmax) {
+                float x1 = points[i][0], y1 = points[i][1];
+                float x2 = points[i + 1][0], y2 = points[i + 1][1];
+                y = ((y2 - y1) / (x2 - x1)) * (wxmax - x1) + y1;
+                t[k][0] = x1;
+                t[k][1] = y1;
+                k++;
+                t[k][0] = wxmax;
+                t[k][1] = y;
+                k++;
+            }
+        }
+    }
+    for (int i = 0; i < 10; i++) {
+        points[i][0] = 0;
+        points[i][1] = 0;
+    }
+    for (int i = 0; i < k; i++) {
+        points[i][0] = t[i][0];
+        points[i][1] = t[i][1];
+    }
+    points[k][0] = points[0][0];
+    points[k][1] = points[0][1];
+    return k;
+}
+
+void P_C() {
+    Draw();
+}
+
+void goMenu(int value) {
+    switch (value) {
+        case 1: edge = LeftClipping(edge); Draw(); break;
+        case 2: edge = RightClipping(edge); Draw(); break;
+        case 3: edge = TopClipping(edge); Draw(); break;
+        case 4: edge = BottomClipping(edge); Draw(); break;
+    }
+    glutPostRedisplay();
+}
+
+int main(int argc, char** argv) {
+    cout << "\nEnter No of edges of polygon: ";
+    cin >> edge;
+    for (int i = 0; i < edge; i++) {
+        cout << "\nEnter point " << i << " (x space y): ";
+        cin >> points[i][0] >> points[i][1];
+    }
+    points[edge][0] = points[0][0];
+    points[edge][1] = points[0][1];
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(640, 480);
+    glutInitWindowPosition(200, 200);
+    glutCreateWindow("Polygon Clipping");
+    init();
+    glutCreateMenu(goMenu);
+    glutAddMenuEntry("Left", 1);
+    glutAddMenuEntry("Right", 2);
+    glutAddMenuEntry("Top", 3);
+    glutAddMenuEntry("Bottom", 4);
+    glutAttachMenu(GLUT_RIGHT_BUTTON);
+    glutDisplayFunc(P_C);
+    glutMainLoop();
+    return 0;
+}
+
+---------------------------------------------------------------------------------------------------------------------------------
+
+7)Implement following 2D transformations on the object with respect to axis : i)
+Scaling ii) Rotation about arbitrary point. 
+Code:
+#include <GL/glut.h>
+#include <cmath>
+#include <iostream>
+
+using namespace std;
+
+// Triangle vertices
+float triangle[3][2] = {
+    {-0.5, -0.5},
+    {0.5, -0.5},
+    {0.0, 0.5}
+};
+
+// Transformation variables
+float sx = 1.0, sy = 1.0;  // Scaling factors
+float theta = 0;            // Rotation angle (in degrees)
+float Xf = 0.0, Yf = 0.0;  // Arbitrary rotation point
+
+// Function to apply Scaling
+void scaleObject() {
+    cout << "Enter scaling factors (sx, sy): ";
+
+    if (!(cin >> sx >> sy)) {
+        cout << "Invalid input! Resetting scaling to (1,1)." << endl;
+        cin.clear();  // Clear error flag
+        cin.ignore(100, '\n');  // Ignore incorrect input
+        sx = sy = 1.0;
+    }
+
+    for (int i = 0; i < 3; i++) {
+        triangle[i][0] *= sx;
+        triangle[i][1] *= sy;
+    }
+}
+
+// Function to apply Rotation about an Arbitrary Point
+void rotateObject() {
+    cout << "Enter rotation angle (degrees): ";
+    if (!(cin >> theta)) {
+        cout << "Invalid input! Resetting angle to 0." << endl;
+        cin.clear();
+        cin.ignore(100, '\n');
+        theta = 0;
+        return;
+    }
+
+    cout << "Enter arbitrary rotation point (Xf, Yf): ";
+    if (!(cin >> Xf >> Yf)) {
+        cout << "Invalid input! Resetting rotation point to (0,0)." << endl;
+        cin.clear();
+        cin.ignore(100, '\n');
+        Xf = Yf = 0;
+    }
+
+    float rad = theta * (M_PI / 180.0); // Convert degrees to radians
+    float cosT = cos(rad);
+    float sinT = sin(rad);
+
+    for (int i = 0; i < 3; i++) {
+        float x = triangle[i][0] - Xf;
+        float y = triangle[i][1] - Yf;
+
+        triangle[i][0] = Xf + (x * cosT - y * sinT);
+        triangle[i][1] = Yf + (x * sinT + y * cosT);
+    }
+}
+
+// Function to draw the transformed object
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    glLoadIdentity();
+
+    glBegin(GL_TRIANGLES);
+    glColor3f(1.0, 0.5, 0.0);  // Orange color
+    for (int i = 0; i < 3; i++) {
+        glVertex2f(triangle[i][0], triangle[i][1]);
+    }
+    glEnd();
+
+    glFlush();
+}
+
+// Menu function for interaction
+void menu(int option) {
+    switch (option) {
+        case 1: scaleObject(); break;
+        case 2: rotateObject(); break;
+        case 3: exit(0);
+    }
+    glutPostRedisplay();
+}
+
+// Initialize OpenGL
+void init() {
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+    glMatrixMode(GL_PROJECTION);
+    gluOrtho2D(-1, 1, -1, 1);
+    glMatrixMode(GL_MODELVIEW);
+}
+
+// Main function
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(500, 500);
+    glutInitWindowPosition(100, 100);
+    glutCreateWindow("Manual 2D Transformations");
+
+    init();
+
+    glutCreateMenu(menu);
+    glutAddMenuEntry("1. Scale", 1);
+    glutAddMenuEntry("2. Rotate", 2);
+    glutAddMenuEntry("3. Exit", 3);
+    glutAttachMenu(GLUT_RIGHT_BUTTON);
+
+    glutDisplayFunc(display);
+    glutMainLoop();
+    return 0;
+}
+
+---------------------------------------------------------------------------------------------------------------------------------
+
+8)Implement following 2D transformations on the object with respect to axis : i)
+Scaling ii) Reflection
+Code:
+#include <GL/glut.h>
+#include <cmath>
+#include <iostream>
+
+using namespace std;
+
+// Triangle vertices
+float triangle[3][2] = {
+    {-0.5, -0.5},
+    {0.5, -0.5},
+    {0.0, 0.5}
+};
+
+// Transformation variables
+float sx = 1.0, sy = 1.0;  // Scaling factors
+
+// Function to apply Scaling
+void scaleObject() {
+    cout << "Enter scaling factors (sx, sy): ";
+
+    if (!(cin >> sx >> sy)) {
+        cout << "Invalid input! Resetting scaling to (1,1)." << endl;
+        cin.clear();  // Clear error flag
+        cin.ignore(100, '\n');  // Ignore incorrect input
+        sx = sy = 1.0;
+    }
+
+    // Apply scaling to each vertex
+    for (int i = 0; i < 3; i++) {
+        triangle[i][0] *= sx;
+        triangle[i][1] *= sy;
+    }
+}
+
+// Function to apply Reflection
+void reflectObject() {
+    char axis;
+    cout << "Reflect across which axis? (x/y): ";
+
+    if (!(cin >> axis)) {
+        cout << "Invalid input! Resetting reflection." << endl;
+        cin.clear();
+        cin.ignore(100, '\n');
+        return;
+    }
+
+    if (axis == 'x' || axis == 'X') {
+        // Reflect across the X-axis
+        for (int i = 0; i < 3; i++) {
+            triangle[i][1] = -triangle[i][1];
+        }
+    }
+    else if (axis == 'y' || axis == 'Y') {
+        // Reflect across the Y-axis
+        for (int i = 0; i < 3; i++) {
+            triangle[i][0] = -triangle[i][0];
+        }
+    }
+    else {
+        cout << "Invalid axis! Use 'x' or 'y'." << endl;
+    }
+}
+
+// Function to draw the transformed object
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    glLoadIdentity();
+
+    glBegin(GL_TRIANGLES);
+    glColor3f(1.0, 0.5, 0.0);  // Orange color
+    for (int i = 0; i < 3; i++) {
+        glVertex2f(triangle[i][0], triangle[i][1]);
+    }
+    glEnd();
+
+    glFlush();
+}
+
+// Menu function for interaction
+void menu(int option) {
+    switch (option) {
+        case 1: scaleObject(); break;
+        case 2: reflectObject(); break;
+        case 3: exit(0);
+    }
+    glutPostRedisplay();
+}
+
+// Initialize OpenGL
+void init() {
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+    glMatrixMode(GL_PROJECTION);
+    gluOrtho2D(-1, 1, -1, 1);
+    glMatrixMode(GL_MODELVIEW);
+}
+
+// Main function
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(500, 500);
+    glutInitWindowPosition(100, 100);
+    glutCreateWindow("Manual 2D Transformations");
+
+    init();
+
+    glutCreateMenu(menu);
+    glutAddMenuEntry("1. Scale", 1);
+    glutAddMenuEntry("2. Reflect", 2);
+    glutAddMenuEntry("3. Exit", 3);
+    glutAttachMenu(GLUT_RIGHT_BUTTON);
+
+    glutDisplayFunc(display);
+    glutMainLoop();
+    return 0;
+}
+
+---------------------------------------------------------------------------------------------------------------------------------
+
+9)Implement following 2D transformations on the object with respect to axis : i)
+Rotation about arbitrary point ii) Reflection.
+Code:
+#include <GL/glut.h>
+#include <cmath>
+#include <iostream>
+
+using namespace std;
+
+// Triangle vertices
+float triangle[3][2] = {
+    {-0.5, -0.5},
+    {0.5, -0.5},
+    {0.0, 0.5}
+};
+
+// Transformation variables
+float theta = 0;           // Rotation angle (in degrees)
+float Xf = 0.0, Yf = 0.0;  // Arbitrary rotation point
+
+// Function to apply Rotation about an Arbitrary Point
+void rotateObject() {
+    cout << "Enter rotation angle (degrees): ";
+    if (!(cin >> theta)) {
+        cout << "Invalid input! Resetting angle to 0." << endl;
+        cin.clear();
+        cin.ignore(100, '\n');
+        theta = 0;
+        return;
+    }
+
+    cout << "Enter arbitrary rotation point (Xf, Yf): ";
+    if (!(cin >> Xf >> Yf)) {
+        cout << "Invalid input! Resetting rotation point to (0,0)." << endl;
+        cin.clear();
+        cin.ignore(100, '\n');
+        Xf = Yf = 0;
+    }
+
+    float rad = theta * (M_PI / 180.0); // Convert degrees to radians
+    float cosT = cos(rad);
+    float sinT = sin(rad);
+
+    for (int i = 0; i < 3; i++) {
+        float x = triangle[i][0] - Xf;
+        float y = triangle[i][1] - Yf;
+
+        triangle[i][0] = Xf + (x * cosT - y * sinT);
+        triangle[i][1] = Yf + (x * sinT + y * cosT);
+    }
+}
+
+// Function to apply Reflection
+void reflectObject() {
+    char axis;
+    cout << "Reflect across which axis? (x/y): ";
+
+    if (!(cin >> axis)) {
+        cout << "Invalid input! Resetting reflection." << endl;
+        cin.clear();
+        cin.ignore(100, '\n');
+        return;
+    }
+
+    if (axis == 'x' || axis == 'X') {
+        for (int i = 0; i < 3; i++) {
+            triangle[i][1] = -triangle[i][1];
+        }
+    }
+    else if (axis == 'y' || axis == 'Y') {
+        for (int i = 0; i < 3; i++) {
+            triangle[i][0] = -triangle[i][0];
+        }
+    }
+    else {
+        cout << "Invalid axis! Use 'x' or 'y'." << endl;
+    }
+}
+
+// Function to draw the transformed object
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    glLoadIdentity();
+
+    glBegin(GL_TRIANGLES);
+    glColor3f(1.0, 0.5, 0.0);  // Orange color
+    for (int i = 0; i < 3; i++) {
+        glVertex2f(triangle[i][0], triangle[i][1]);
+    }
+    glEnd();
+
+    glFlush();
+}
+
+// Menu function for interaction
+void menu(int option) {
+    switch (option) {
+        case 1: rotateObject(); break;
+        case 2: reflectObject(); break;
+        case 3: exit(0);
+    }
+    glutPostRedisplay();
+}
+
+// Initialize OpenGL
+void init() {
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+    glMatrixMode(GL_PROJECTION);
+    gluOrtho2D(-1, 1, -1, 1);
+    glMatrixMode(GL_MODELVIEW);
+}
+
+// Main function
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(500, 500);
+    glutInitWindowPosition(100, 100);
+    glutCreateWindow("Manual 2D Transformations");
+
+    init();
+
+    glutCreateMenu(menu);
+    glutAddMenuEntry("1. Rotate", 1);
+    glutAddMenuEntry("2. Reflect", 2);
+    glutAddMenuEntry("3. Exit", 3);
+    glutAttachMenu(GLUT_RIGHT_BUTTON);
+
+    glutDisplayFunc(display);
+    glutMainLoop();
+    return 0;
+}
+
+---------------------------------------------------------------------------------------------------------------------------------
+
+10)Generate fractal patterns using i) Bezier.
+Code:
+#include <GL/glut.h>
+#include <cmath>
+
+void drawBezier(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4, int depth) {
+    if (depth == 0) {
+        glBegin(GL_LINES);
+        glVertex2f(x1, y1);
+        glVertex2f(x4, y4);
+        glEnd();
+        return;
+    }
+
+    // Calculate midpoints for the Bezier curve
+    float x12 = (x1 + x2) / 2;
+    float y12 = (y1 + y2) / 2;
+    float x23 = (x2 + x3) / 2;
+    float y23 = (y2 + y3) / 2;
+    float x34 = (x3 + x4) / 2;
+    float y34 = (y3 + y4) / 2;
+
+    float x123 = (x12 + x23) / 2;
+    float y123 = (y12 + y23) / 2;
+    float x234 = (x23 + x34) / 2;
+    float y234 = (y23 + y34) / 2;
+
+    float x1234 = (x123 + x234) / 2;
+    float y1234 = (y123 + y234) / 2;
+
+    // Recursive call for both halves of the curve
+    drawBezier(x1, y1, x12, y12, x123, y123, x1234, y1234, depth - 1);
+    drawBezier(x1234, y1234, x234, y234, x34, y34, x4, y4, depth - 1);
+}
+
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    glColor3f(1.0, 1.0, 1.0);  // Set color to white
+    drawBezier(100, 100, 150, 200, 350, 200, 400, 100, 5);  // Draw the Bezier curve with fractal depth 5
+    glFlush();
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(500, 500);
+    glutCreateWindow("Bezier Fractal");
+
+    glClearColor(0.0, 0.0, 0.0, 0.0);  // Set the background color to black
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(0, 500, 0, 500);  // Set up orthogonal 2D projection
+
+    glutDisplayFunc(display);
+    glutMainLoop();
+    return 0;
+}
+---------------------------------------------------------------------------------------------------------------------------------
+
+11)Generate fractal patterns using i) Koch Curve.
+Code:
+#include <GL/glut.h>
+#include <cmath>
+
+// Recursive function to draw the Koch curve
+void drawKoch(float x1, float y1, float x2, float y2, int depth) {
+    if (depth == 0) {
+        glBegin(GL_LINES);
+        glVertex2f(x1, y1);
+        glVertex2f(x2, y2);
+        glEnd();
+        return;
+    }
+
+    // Calculate the intermediate points
+    float deltaX = x2 - x1;
+    float deltaY = y2 - y1;
+
+    // Points B and C are the divisions of the line into three parts
+    float xB = x1 + deltaX / 3;
+    float yB = y1 + deltaY / 3;
+    float xC = x1 + 2 * deltaX / 3;
+    float yC = y1 + 2 * deltaY / 3;
+
+    // Point D is the peak of the equilateral triangle
+    float xD = xB + (deltaX * cos(60 * M_PI / 180) - deltaY * sin(60 * M_PI / 180)) / 3;
+    float yD = yB + (deltaX * sin(60 * M_PI / 180) + deltaY * cos(60 * M_PI / 180)) / 3;
+
+    // Recursively draw the smaller segments
+    drawKoch(x1, y1, xB, yB, depth - 1);
+    drawKoch(xB, yB, xD, yD, depth - 1);
+    drawKoch(xD, yD, xC, yC, depth - 1);
+    drawKoch(xC, yC, x2, y2, depth - 1);
+}
+
+// Function to display the Koch curve
+void displayKoch() {
+    glClear(GL_COLOR_BUFFER_BIT);   // Clear the screen
+    glColor3f(1.0, 1.0, 1.0);       // Set the color to white
+    drawKoch(100, 100, 400, 100, 4); // Draw the Koch curve with depth 4
+    glFlush();                      // Render the result
+}
+
+// Main function
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);  // Single buffer and RGB color mode
+    glutInitWindowSize(500, 500);                 // Window size
+    glutCreateWindow("Koch Curve Fractal");       // Window title
+
+    glClearColor(0.0, 0.0, 0.0, 1.0);            // Set the background color to black
+    glMatrixMode(GL_PROJECTION);                  // Set the projection mode
+    glLoadIdentity();                             // Reset the matrix
+    gluOrtho2D(0, 500, 0, 500);                  // Set the 2D orthographic projection
+
+    glutDisplayFunc(displayKoch);   // Set the display callback function
+    glutMainLoop();                 // Enter the GLUT event processing loop
+
+    return 0;
+}
+
+---------------------------------------------------------------------------------------------------------------------------------
+
+12)Implement animation principles for any object.
+Code:
+#include <GL/glut.h>
+
+float x_position = -0.8f;  // Starting position of the square
+float speed = 0.005f;      // Speed of the square's movement
+
+// Function to update the position of the object
+void updatePosition(int value) {
+    // Move the square along the x-axis
+    x_position += speed;
+
+    // Reverse direction when reaching the boundary
+    if (x_position > 1.0f || x_position < -1.0f) {
+        speed = -speed;  // Reverse direction
+    }
+
+    // Redraw the scene
+    glutPostRedisplay();
+
+    // Register next update call
+    glutTimerFunc(16, updatePosition, 0);  // 60 frames per second
+}
+
+// Function to draw the square
+void drawSquare() {
+    glClear(GL_COLOR_BUFFER_BIT);  // Clear the screen
+
+    glLoadIdentity();  // Reset transformations
+    glTranslatef(x_position, 0.0f, 0.0f);  // Move the square along the x-axis
+
+    glBegin(GL_QUADS);
+    glColor3f(0.0f, 1.0f, 0.0f);  // Green color
+    glVertex2f(-0.1f, -0.1f);  // Bottom-left corner
+    glVertex2f(0.1f, -0.1f);   // Bottom-right corner
+    glVertex2f(0.1f, 0.1f);    // Top-right corner
+    glVertex2f(-0.1f, 0.1f);   // Top-left corner
+    glEnd();
+
+    glFlush();  // Render the object to the screen
+}
+
+// Initialize OpenGL settings
+void init() {
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);  // Set background color to black
+    glMatrixMode(GL_PROJECTION);  // Set the projection matrix
+    gluOrtho2D(-1.0f, 1.0f, -1.0f, 1.0f);  // Set the 2D orthographic projection
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);  // Initialize GLUT
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);  // Single buffer and RGB color mode
+    glutInitWindowSize(500, 500);  // Set window size
+    glutCreateWindow("Animation Principles - Moving Square");  // Create window
+
+    init();  // Initialize OpenGL
+
+    glutDisplayFunc(drawSquare);  // Register display function
+    glutTimerFunc(25, updatePosition, 0);  // Set the animation update function with a timer
+
+    glutMainLoop();  // Enter the GLUT event processing loop
+
+    return 0;
+}
